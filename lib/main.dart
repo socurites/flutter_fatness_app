@@ -11,100 +11,159 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fatness Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyCustomForm(),
+      home: BmiMain(),
     );
   }
 }
 
-class MyCustomForm extends StatefulWidget {
+class BmiMain extends StatefulWidget {
   @override
-  _MyCustomFormState createState() => _MyCustomFormState();
+  _BmiMainState createState() => _BmiMainState();
 }
 
-class _MyCustomFormState extends State<MyCustomForm> {
-  final myController = TextEditingController();
+class _BmiMainState extends State<BmiMain> {
   final _formKey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    super.initState();
-
-    myController.addListener(_printLatestValue);
-  }
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
 
   @override
   void dispose() {
-    myController.dispose();
-    super.dispose();
-  }
+    _heightController.dispose();
+    _weightController.dispose();
 
-  _printLatestValue() {
-    print('Second input: ${myController.text}');
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Text Input Example'),
+        title: Text('비만도 계산기'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              onChanged: (text) {
-                print("First input: $text");
-              },
-            ),
-            TextField(
-              controller: myController,
-            ),
-            Form(
-              key: _formKey,
-              child: TextFormField(
+      body: Container(
+        padding: EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '키',
+                ),
+                keyboardType: TextInputType.number,
+                controller: _heightController,
                 validator: (value) {
-                  if (value.isEmpty) {
-                    return 'Input text';
+                  if (value.trim().isEmpty) {
+                    return '키 입력';
                   }
-
                   return null;
                 },
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: Builder(
-                builder: (context) => RaisedButton(
-                  child: Text('Verify'),
+              SizedBox(
+                height: 16.0,
+              ),
+              TextFormField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: '몸무게',
+                ),
+                keyboardType: TextInputType.number,
+                controller: _weightController,
+                validator: (value) {
+                  if (value.trim().isEmpty) {
+                    return '몸무게 입력';
+                  }
+                  return null;
+                },
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 16.0),
+                alignment: Alignment.centerRight,
+                child: RaisedButton(
+                  child: Text('결과'),
                   onPressed: () {
                     if (_formKey.currentState.validate()) {
-                      Scaffold.of(context)
-                          .showSnackBar(SnackBar(content: Text('Verified')));
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => BmiResult(double.parse(_heightController.text.trim()), double.parse(_weightController.text.trim()))
+                          )
+                      );
                     }
                   },
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class BmiResult extends StatelessWidget {
+  BmiResult(this.height, this.weight);
+
+  final double height;
+  final double weight;
+
+  @override
+  Widget build(BuildContext context) {
+    final bmi = weight / ((height / 100) * (height / 100));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('비만도 계산기'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _calcBmi(bmi),
+              style: TextStyle(
+                fontSize: 36,
+              ),
+            ),
+            SizedBox(
+              height: 16,
+            ),
+            Icon(
+              _calcIcon(bmi),
+              color: Colors.green,
+              size: 100
             ),
           ],
         ),
       ),
     );
   }
+
+  String _calcBmi(double bmi) {
+    var result = '저체중';
+
+    if (bmi >= 35) {
+      result = '고도 비만';
+    } else if (bmi > 18.5) {
+      result = '정상';
+    }
+
+    return result;
+  }
+
+  IconData _calcIcon(double bmi) {
+    IconData iconData = Icons.sentiment_dissatisfied;
+    if (bmi >= 35) {
+      iconData = Icons.sentiment_very_dissatisfied;
+    } else if (bmi > 18.5) {
+      iconData = Icons.sentiment_satisfied;
+    }
+
+    return iconData;
+  }
 }
+
